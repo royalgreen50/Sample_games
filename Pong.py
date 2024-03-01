@@ -1,33 +1,27 @@
 import pygame
 import sys
+import time
 
 # General setup
 pygame.init()
 clock = pygame.time.Clock()
 pygame.mixer.init()
 
-# Setting up main window
-screen_width = 800
-screen_height = 600
-screen = pygame.display.set_mode((screen_width, screen_height))
+# Create a window
+width, height = 800, 600
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Pong Game")
 
-ball = pygame.Rect(screen_width // 2 - 15, screen_height // 2 - 15, 30, 30)
-paddle_a = pygame.Rect(10, screen_height // 2 - 70, 10, 140)
-paddle_b = pygame.Rect(screen_width - 20, screen_height // 2 - 70, 10, 14)
 # Game objects
-ball = pygame.Rect(screen_width // 2 - 15, screen_height // 2 - 15, 30, 30)
-paddle_a = pygame.Rect(10, screen_height // 2 - 70, 10, 140)
-paddle_b = pygame.Rect(screen_width - 20, screen_height // 2 - 70, 10, 140)
+ball = pygame.Rect(width // 2 - 15, height // 2 - 15, 30, 30)
+paddle_a = pygame.Rect(10, height // 2 - 70, 10, 140)
+paddle_b = pygame.Rect(width - 20, height // 2 - 70, 10, 140)
+
 # Sound
-paddle_sound = pygame.mixer.Sound(
-    r"C:\Users\Royal Green\Sample_games\sounds.wav\616541__josheb_policarpio__retro-video-game-sound-effect-short-pluck-version.wav"
-)
-bounce_sound = pygame.mixer.Sound(
-    r"C:\Users\Royal Green\Sample_games\sounds.wav\4371__noisecollector__pongblipc4.wav"
-)
-score_sound = pygame.mixer.Sound(
-    r"C:\Users\Royal Green\Sample_games\sounds.wav\mixkit-fast-small-sweep-transition-166.wav"
-)
+paddle_sound = pygame.mixer.Sound(r"path\to\paddle_sound.wav")
+bounce_sound = pygame.mixer.Sound(r"path\to\bounce_sound.wav")
+score_sound = pygame.mixer.Sound(r"path\to\score_sound.wav")
+
 # Game variables
 font = pygame.font.Font(None, 36)
 ball_speed = [2, 2]
@@ -36,80 +30,127 @@ ball_init_speed = [2, 2]
 paddle_speed = 2
 score_a = 0
 score_b = 0
+game_over = False
 
-# Game loop
-while True:
-    # Event handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+def draw_objects():
+    """Draw all the game objects on the screen."""
+    screen.fill((0, 0, 0))
+    pygame.draw.rect(screen, (255, 255, 255), paddle_a)
+    pygame.draw.rect(screen, (255, 255, 255), paddle_b)
+    pygame.draw.ellipse(screen, (255, 255, 255), ball)
 
-    # Paddle movement
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w]:
-        paddle_a.move_ip(0, -paddle_speed)
-    if keys[pygame.K_s]:
-        paddle_a.move_ip(0, paddle_speed)
-    if keys[pygame.K_UP]:
-        paddle_b.move_ip(0, -paddle_speed)
-    if keys[pygame.K_DOWN]:
-        paddle_b.move_ip(0, paddle_speed)
+def draw_score():
+    """Display the score on the screen."""
+    score_text = font.render(f"Score: {score_a} - {score_b}", True, (255, 255, 255))
+    screen.blit(score_text, (width // 2 - score_text.get_width() // 2, 10))
 
-    # Ball movement
+def paddle_movement(keys, paddle):
+    """Move the paddle based on the provided keys."""
+    if keys[pygame.K_w] and paddle.y > 0:
+        paddle.move_ip(0, -paddle_speed)
+    if keys[pygame.K_s] and paddle.y + paddle.height < height:
+        paddle.move_ip(0, paddle_speed)
+
+def ball_movement():
+    """Move the ball and check for collisions."""
+    global score_a, score_b, game_over
+
     ball.move_ip(ball_speed)
 
-    # Collision checking
     if ball.colliderect(paddle_a) or ball.colliderect(paddle_b):
         ball_speed[0] *= -1
-        ball_speed[
-            0
-        ] += ball_speed_increase  # increase speed after bouncing off the paddle
+        ball_speed[0] += ball_speed_increase
         paddle_sound.play()
 
-    if ball.top <= 0 or ball.bottom >= screen_height:
+    if ball.top <= 0 or ball.bottom >= height:
         ball_speed[1] *= -1
-        ball_speed[
-            1
-        ] += ball_speed_increase  # increase speed after bouncing off the top/bottom
+        ball_speed[1] += ball_speed_increase
         bounce_sound.play()
 
-    # Scoring
+    if ball.left < 0:
+        score_b += 1 
+        ball.center = (width // 2, 
+                        height // 2) 
+        ball_speed[0] *= -1 
+        ball_speed = ball_init_speed.copy() 
+        # reset speed to initial speed 
+        score_sound.play() 
+        import pygame
+import sys
+import time
+
+# General setup
+pygame.init()
+clock = pygame.time.Clock()
+pygame.mixer.init()
+
+# Create a window
+width, height = 800, 600
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Pong Game")
+
+# Game objects
+ball = pygame.Rect(width // 2 - 15, height // 2 - 15, 30, 30)
+paddle_a = pygame.Rect(10, height // 2 - 70, 10, 140)
+paddle_b = pygame.Rect(width - 20, height // 2 - 70, 10, 140)
+
+# Sound
+paddle_sound = pygame.mixer.Sound(r"path\to\paddle_sound.wav")
+bounce_sound = pygame.mixer.Sound(r"path\to\bounce_sound.wav")
+score_sound = pygame.mixer.Sound(r"path\to\score_sound.wav")
+
+# Game variables
+font = pygame.font.Font(None, 36)
+ball_speed = [2, 2]
+ball_speed_increase = 2.0
+ball_init_speed = [2, 2]
+paddle_speed = 2
+score_a = 0
+score_b = 0
+game_over = False
+ball_reset=False
+max_score=10
+def ball_reset():
+
+def draw_objects():
+    """Draw all the game objects on the screen."""
+    screen.fill((0, 0, 0))
+    pygame.draw.rect(screen, (255, 255, 255), paddle_a)
+    pygame.draw.rect(screen, (255, 255, 255), paddle_b)
+    pygame.draw.ellipse(screen, (255, 255, 255), ball)
+
+def draw_score():
+    """Display the score on the screen."""
+    score_text = font.render(f"Score: {score_a} - {score_b}", True, (255, 255, 255))
+    screen.blit(score_text, (width // 2 - score_text.get_width() // 2, 10))
+
+def paddle_movement(keys, paddle):
+    """Move the paddle based on the provided keys."""
+    if keys[pygame.K_w] and paddle.y > 0:
+        paddle.move_ip(0, -paddle_speed)
+    if keys[pygame.K_s] and paddle.y + paddle.height < height:
+        paddle.move_ip(0, paddle_speed)
+
+def ball_movement():
+    """Move the ball and check for collisions."""
+    global score_a, score_b, game_over
+
+    ball.move_ip(ball_speed)
+
+    if ball.colliderect(paddle_a) or ball.colliderect(paddle_b):
+        ball_speed[0] *= -1
+        ball_speed[0] += ball_speed_increase
+        paddle_sound.play()
+
+    if ball.top <= 0 or ball.bottom >= height:
+        ball_speed[1] *= -1
+        ball_speed[1] += ball_speed_increase
+        bounce_sound.play()
+
     if ball.left < 0:
         score_b += 1
-        ball.center = (screen_width // 2, screen_height // 2)
-        ball_speed[0] *= -1
-        ball_speed = ball_init_speed.copy()  # reset speed to initial speed
-        score_sound.play()
-        time.sleep(3)  # pause for 3 seconds
-
-    if ball.right > screen_width:  # scoring for paddle A
-        score_a += 1
-        ball.center = (screen_width // 2, screen_height // 2)
-        ball_speed[0] *= -1
-        ball_speed = ball_init_speed.copy()  # reset speed to initial speed
-        score_sound.play()
-        time.sleep(3)  # pause for 3 seconds
-
-    # Drawing everything
-    screen.fill(pygame.Color("purple"))
-
-    # Render scores
-    score_text_a = font.render("Player 1: " + str(score_a), True, ("yellow"))
-    score_text_b = font.render(" Player 2: " + str(score_b), True, ("yellow"))
-    screen.blit(score_text_a, (10, 10))
-    screen.blit(score_text_b, (405, 10))
-
-    # Add colors
-    pygame.draw.rect(screen, pygame.Color("blue"), paddle_a)
-    pygame.draw.rect(screen, pygame.Color("blue"), paddle_b)
-    pygame.draw.ellipse(screen, pygame.Color("green"), ball)
-    pygame.draw.aaline(
-        screen,
-        pygame.Color("yellow"),
-        (screen_width // 2, 0),
-        (screen_width // 2, screen_height),
-    )
-
-    pygame.display.flip()
-    clock.tick(60)
+        ball_reset()
+    """Check for game over condition."""
+if score_b == max_score:
+   game_over = True
+   #game_over_sound.play()
