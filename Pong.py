@@ -1,166 +1,138 @@
 import pygame
-import random
 import sys
+import random
 import time
 
-
-
+# Initialize pygame and mixer
 pygame.init()
+pygame.mixer.init()
+
+# Set up colors
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 # Set up some constants
-pygame.display.set_caption("Pong")  # Change the title here
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 BALL_RADIUS = 10
-ball = pygame.Rect(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, BALL_RADIUS * 2, BALL_RADIUS * 2)
-ball_speed = [2, 2]
-paddle_height = 100
-paddle_width = 25
-brick_height = paddle_height
-brick_width = paddle_width
-paddle_speed = 3
-paddle1_pos = [5, SCREEN_HEIGHT // 2 - paddle_height // 2]
-paddle2_pos = [SCREEN_WIDTH - 5 - 2 * paddle_width, SCREEN_HEIGHT // 2 - paddle_height // 2]
-WIDTH = SCREEN_WIDTH
-HEIGHT = SCREEN_HEIGHT
-player1_score = 0
-player2_score = 0
-font = pygame.font.Font(None, 36)
-paddle1_move = 0
-paddle2_move = 0
-ball_speed_increment = 1
-max_ball_speed = 3
+PADDLE_HEIGHT = 100
+PADDLE_WIDTH = 25
+PADDLE_SPEED = 3
+PLAYER1_SCORE = 0
+PLAYER2_SCORE = 0
+paddle1_color = BLUE
+paddle2_color = GREEN
 
-# Create the bricks
-bricks = []
-for i in range(5):  # Create 50 bricks
-    brick_x = random.randint(0, SCREEN_WIDTH - brick_width)
-    brick_y = random.randint(0, SCREEN_HEIGHT // 2)
-    bricks.append(pygame.Rect(brick_x, brick_y, brick_width, brick_height))
+# Set up the ball and paddles
+ball = pygame.Rect(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, BALL_RADIUS * 2, BALL_RADIUS * 2)
+ball_speed = [random.choice((-2, 2)), random.choice((-2, 2))]
+paddle1 = pygame.Rect(5, SCREEN_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
+paddle2 = pygame.Rect(SCREEN_WIDTH - 5 - PADDLE_WIDTH, SCREEN_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
+paddle1_speed = [0, 0]
+paddle2_speed = [0, 0]
+
+# Load the music and sound effects
+pygame.mixer.music.load('sounds.wav/2020-04-24_-_Too_Much_Funk_-_FesliyanStudios_-_Steve_Oaks.mp3')
+bounce_sound = pygame.mixer.Sound('sounds.wav/4371__noisecollector__pongblipc4.wav')
+score_sound = pygame.mixer.Sound('sounds.wav/mixkit-fast-small-sweep-transition-166.wav')
+
+# Play the background music
+pygame.mixer.music.play(-1)
+
+# Create a custom event for changing the paddle color back
+CHANGE_COLOR_BACK_EVENT = pygame.USEREVENT + 1
+
+# Set up the display
+pygame.display.set_caption("Pong")
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 def reset_ball():
-    global ball_speed, ball
-    ball.x, ball.y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
-    ball_speed[0] = random.choice([-3, 3])
-    ball_speed[1] = -3
-
-# Create the paddles
-paddle1_color = (255, 0, 0)
-paddle2_color = (0, 0, 255)
-
-# Initialize clock
-clock = pygame.time.Clock()
+    global ball, ball_speed
+    ball.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+    ball_speed = [random.choice((-2, 2)), random.choice((-2, 2))]
 
 # Game loop
 while True:
+    screen.fill((0, 0, 0))  # Clear the screen by filling it with black
+
+    # Draw the center line
+    pygame.draw.line(screen, WHITE, (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT), 1)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_a:
-                paddle1_move = -paddle_speed
+            if event.key == pygame.K_UP:
+                paddle2_speed[1] = -PADDLE_SPEED
+            elif event.key == pygame.K_DOWN:
+                paddle2_speed[1] = PADDLE_SPEED
+            elif event.key == pygame.K_w:
+                paddle1_speed[1] = -PADDLE_SPEED
             elif event.key == pygame.K_s:
-                paddle1_move = paddle_speed
-            elif event.key == pygame.K_RIGHT:
-                paddle2_move = -paddle_speed
-            elif event.key == pygame.K_LEFT:
-                paddle2_move = paddle_speed
+                paddle1_speed[1] = PADDLE_SPEED
         elif event.type == pygame.KEYUP:
-            if event.key in (pygame.K_a, pygame.K_s):
-                paddle1_move = 0
-            elif event.key in (pygame.K_RIGHT, pygame.K_LEFT):
-                paddle2_move = 0
+            if event.key in (pygame.K_UP, pygame.K_DOWN):
+                paddle2_speed[1] = 0
+            elif event.key in (pygame.K_w, pygame.K_s):
+                paddle1_speed[1] = 0
 
-    # Move the paddles
-    paddle1_pos[1] += paddle1_move
-    paddle2_pos[1] += paddle2_move
+    # Update paddle positions
+    paddle1.move_ip(paddle1_speed)
+    paddle2.move_ip(paddle2_speed)
 
-    # Move the ball
-    ball.x += ball_speed[0]
-    ball.y += ball_speed[1]
+    # Keep paddles inside the screen
+    if paddle1.top < 0:
+        paddle1.top = 0
+    if paddle1.bottom > SCREEN_HEIGHT:
+        paddle1.bottom = SCREEN_HEIGHT
+    if paddle2.top < 0:
+        paddle2.top = 0
+    if paddle2.bottom > SCREEN_HEIGHT:
+        paddle2.bottom = SCREEN_HEIGHT
 
-    # Check for ball collision with top and bottom
+    # Update ball position
+    ball.move_ip(ball_speed)
+
+    # Ball collision with paddles
+    if ball.colliderect(paddle1):
+        ball_speed[0] = abs(ball_speed[0])
+        bounce_sound.play()
+    elif ball.colliderect(paddle2):
+        ball_speed[0] = -abs(ball_speed[0])
+        bounce_sound.play()
+
+    # Ball collision with top and bottom
     if ball.top < 0 or ball.bottom > SCREEN_HEIGHT:
-        ball_speed[1] *= -1
+        ball_speed[1] = -ball_speed[1]
+        bounce_sound.play()
 
-    # Check for ball collision with bricks
-    for brick in bricks:
-        if ball.colliderect(brick):
-            ball_speed[1] *= -1
-            ball_speed[0] += random.choice([-1, 1]) * ball_speed_increment
-            if ball_speed[0] > max_ball_speed:
-                ball_speed[0] = max_ball_speed
-            elif ball_speed[0] < -max_ball_speed:
-                ball_speed[0] = -max_ball_speed
-            if ball_speed[1] > max_ball_speed:
-                ball_speed[1] = max_ball_speed
-            elif ball_speed[1] < -max_ball_speed:
-                ball_speed[1] = -max_ball_speed
-            bricks.remove(brick)
-            reset_ball()
-            break  # Break the loop to prevent further collisions
-
-    # Check for ball collision with paddles
-    if ball.colliderect(pygame.Rect(paddle1_pos[0], paddle1_pos[1], paddle_width, paddle_height)):
-        ball_speed[0] *= -1
-    elif ball.colliderect(pygame.Rect(paddle2_pos[0], paddle2_pos[1], paddle_width, paddle_height)):
-        ball_speed[0] *= -1
-
-    # Check for ball leaving the screen on the left or right side
-    if ball.left < 0 or ball.right > SCREEN_WIDTH:
-        pygame.time.wait(3000)  # Pause for 3 seconds
-        if ball.left < 0:
-            player2_score += 1
-        else:
-            player1_score += 1
+    # Ball goes off to the sides
+    if ball.left < 0:
+        PLAYER2_SCORE += 1
+        score_sound.play()
+        pygame.time.set_timer(CHANGE_COLOR_BACK_EVENT, 5000)  # Set a timer for 5 seconds
+        reset_ball()
+    elif ball.right > SCREEN_WIDTH:
+        PLAYER1_SCORE += 1
+        score_sound.play()
         
         reset_ball()
-        pygame.display.flip()  # Update the display before pausing
 
-    # Draw everything
-    screen.fill((0, 0, 0))  # Black background color
-    pygame.draw.circle(screen, (128, 128 , 0), ball.center, BALL_RADIUS)
-    pygame.draw.rect(screen, paddle1_color, pygame.Rect(paddle1_pos[0], paddle1_pos[1], paddle_width, paddle_height))
-    pygame.draw.rect(screen, paddle2_color, pygame.Rect(paddle2_pos[0], paddle2_pos[1], paddle_width, paddle_height))
+    # Draw the ball and paddles
+    pygame.draw.rect(screen, WHITE, ball)
+    pygame.draw.rect(screen, paddle1_color, paddle1)
+    pygame.draw.rect(screen, paddle2_color, paddle2)
 
-    # Draw the score board
-    score_text = font.render(f"Player 1: {player1_score} Player 2: {player2_score}", True, (0, 0, 0))
-    screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, 5))
+    # Draw the scores
+    score_text = f"Player 1: {PLAYER1_SCORE}   Player 2: {PLAYER2_SCORE}"
+    score_surface = pygame.font.Font(None, 32).render(score_text, True, WHITE)
+    screen.blit(score_surface, (SCREEN_WIDTH // 2 - score_surface.get_width() // 2, 10))
 
-    # Draw the bricks
-    brick_color = (255, 0, 0)  # Choose a color for the bricks
-    for brick in bricks:
-        pygame.draw.rect(screen, brick_color, brick)
-
-    # Flip the display
+    # Update the display
     pygame.display.flip()
 
     # Cap the frame rate
-    clock.tick(60)
-    pygame.draw.circle(screen, (128, 128 , 0), ball.center, BALL_RADIUS)
-    pygame.draw.rect(screen, paddle1_color, pygame.Rect(paddle1_pos[0], paddle1_pos[1], paddle_width, paddle_height))
-    pygame.draw.rect(screen, paddle2_color, pygame.Rect(paddle2_pos[0], paddle2_pos[1], paddle_width, paddle_height))
-
-    # Draw the score board
-    score_text = font.render(f"Player 1: {player1_score} Player 2: {player2_score}", True, (0, 0, 0))
-    screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, 5))
-
-    # Draw the bricks
-    brick_color = (255, 0, 0)  # Choose a color for the bricks
-    for brick in bricks:
-        pygame.draw.rect(screen, brick_color, brick)
-import pygame
-
-# Initialize Pygame
-pygame.init()
-
-
-pygame.quit()
-
-    # Flip the display
-pygame.display.flip()
-
-    # Cap the frame rate
-clock.tick(60)
+    pygame.time.Clock().tick(60)
