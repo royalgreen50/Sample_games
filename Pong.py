@@ -110,7 +110,6 @@ score_b = 0
 game_over = False
 ball_reset=False
 max_score=10
-def ball_reset():
 
 def draw_objects():
     """Draw all the game objects on the screen."""
