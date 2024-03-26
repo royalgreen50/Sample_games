@@ -1,7 +1,10 @@
+import os
 import pygame
-import sys
 import random
-import time
+import sys
+
+# Get the directory of the script file
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize pygame and mixer
 pygame.init()
@@ -22,21 +25,19 @@ PADDLE_WIDTH = 25
 PADDLE_SPEED = 3
 PLAYER1_SCORE = 0
 PLAYER2_SCORE = 0
-paddle1_color = BLUE
-paddle2_color = GREEN
 
-# Set up the ball and paddles
-ball = pygame.Rect(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, BALL_RADIUS * 2, BALL_RADIUS * 2)
-ball_speed = [random.choice((-2, 2)), random.choice((-2, 2))]
-paddle1 = pygame.Rect(5, SCREEN_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
-paddle2 = pygame.Rect(SCREEN_WIDTH - 5 - PADDLE_WIDTH, SCREEN_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
-paddle1_speed = [0, 0]
-paddle2_speed = [0, 0]
+# Get the directory of the script file
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+# Construct the paths to the sound files
+music_path = os.path.join(dir_path, 'C:\Users\Royal Green\Funky pong\Sample_games\sounds.wav\2020-04-24_-_Too_Much_Funk_-_FesliyanStudios_-_Steve_Oaks.mp3')
+bounce_sound_path = os.path.join(dir_path, 'C:\Users\Royal Green\Funky pong\Sample_games\sounds.wav\4371__noisecollector__pongblipc4.wav')
+score_sound_path = os.path.join(dir_path, 'C:\Users\Royal Green\Funky pong\Sample_games\sounds.wav\mixkit-fast-small-sweep-transition-166.wav')
 
 # Load the music and sound effects
-pygame.mixer.music.load('sounds.wav/2020-04-24_-_Too_Much_Funk_-_FesliyanStudios_-_Steve_Oaks.mp3')
-bounce_sound = pygame.mixer.Sound('sounds.wav/4371__noisecollector__pongblipc4.wav')
-score_sound = pygame.mixer.Sound('sounds.wav/mixkit-fast-small-sweep-transition-166.wav')
+pygame.mixer.music.load(music_path)
+bounce_sound = pygame.mixer.Sound(bounce_sound_path)
+score_sound = pygame.mixer.Sound(score_sound_path)
 
 # Play the background music
 pygame.mixer.music.play(-1)
@@ -53,6 +54,11 @@ def reset_ball():
     ball.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
     ball_speed = [random.choice((-2, 2)), random.choice((-2, 2))]
 
+# Define the paddles and the ball
+paddle1 = pygame.Rect(50, SCREEN_HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
+paddle2 = pygame.Rect(SCREEN_WIDTH - PADDLE_WIDTH - 50, SCREEN_HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
+ball = pygame.Rect(0, 0, BALL_RADIUS * 2, BALL_RADIUS * 2)  # Define the ball variable
+
 # Game loop
 while True:
     screen.fill((0, 0, 0))  # Clear the screen by filling it with black
@@ -60,11 +66,15 @@ while True:
     # Draw the center line
     pygame.draw.line(screen, WHITE, (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT), 1)
 
+    paddle2_speed = [0, 0]  # Declare the paddle2_speed variable
+    paddle1_speed = [0, 0]  # Declare the paddle1_speed variable
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        elif event.type == pygame.KEYDOWN:
+
+        if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 paddle2_speed[1] = -PADDLE_SPEED
             elif event.key == pygame.K_DOWN:
@@ -74,27 +84,21 @@ while True:
             elif event.key == pygame.K_s:
                 paddle1_speed[1] = PADDLE_SPEED
         elif event.type == pygame.KEYUP:
-            if event.key in (pygame.K_UP, pygame.K_DOWN):
+            if event.key in [pygame.K_UP, pygame.K_DOWN]:
                 paddle2_speed[1] = 0
-            elif event.key in (pygame.K_w, pygame.K_s):
+            elif event.key in [pygame.K_w, pygame.K_s]:
                 paddle1_speed[1] = 0
 
-    # Update paddle positions
     paddle1.move_ip(paddle1_speed)
     paddle2.move_ip(paddle2_speed)
 
     # Keep paddles inside the screen
-    if paddle1.top < 0:
-        paddle1.top = 0
-    if paddle1.bottom > SCREEN_HEIGHT:
-        paddle1.bottom = SCREEN_HEIGHT
-    if paddle2.top < 0:
-        paddle2.top = 0
-    if paddle2.bottom > SCREEN_HEIGHT:
-        paddle2.bottom = SCREEN_HEIGHT
+    paddle1.top = max(paddle1.top, 0)
+    paddle1.bottom = min(paddle1.bottom, SCREEN_HEIGHT)
+    paddle2.top = max(paddle2.top, 0)
+    paddle2.bottom = min(paddle2.bottom, SCREEN_HEIGHT)
 
-    # Update ball position
-    ball.move_ip(ball_speed)
+    ball.move_ip(ball_speed)  # Update ball position
 
     # Ball collision with paddles
     if ball.colliderect(paddle1):
@@ -118,13 +122,14 @@ while True:
     elif ball.right > SCREEN_WIDTH:
         PLAYER1_SCORE += 1
         score_sound.play()
-        
         reset_ball()
 
     # Draw the ball and paddles
-    pygame.draw.rect(screen, WHITE, ball)
+    paddle1_color = (255, 255, 255)  # Define the paddle1_color variable
+    paddle2_color = (255, 255, 255)  # Define the paddle2_color variable
     pygame.draw.rect(screen, paddle1_color, paddle1)
     pygame.draw.rect(screen, paddle2_color, paddle2)
+    pygame.draw.circle(screen, WHITE, ball.center, BALL_RADIUS)
 
     # Draw the scores
     score_text = f"Player 1: {PLAYER1_SCORE}   Player 2: {PLAYER2_SCORE}"
